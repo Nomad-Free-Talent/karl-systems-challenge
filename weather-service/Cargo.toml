@@ -24,4 +24,7 @@ thiserror = { workspace = true }
 reqwest = { workspace = true }
 dashmap = { workspace = true }
 chrono = { workspace = true }
+jsonwebtoken = { workspace = true }
+uuid = { workspace = true }
+futures-util = { workspace = true }
 
