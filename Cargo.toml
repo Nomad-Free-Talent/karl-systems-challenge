@@ -1,0 +1,35 @@
+[workspace]
+members = [
+    "shared",
+    "auth-service",
+    "weather-service",
+    "time-service",
+]
+
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Karl Systems Challenge"]
+license = "MIT"
+
+[workspace.dependencies]
+tokio = { version = "1.35", features = ["full", "test-util"] }
+actix-web = "4.4"
+actix-rt = "2.9"
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres", "uuid", "chrono"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json"] }
+jsonwebtoken = "9.2"
+bcrypt = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+dashmap = "5.5"
+dotenv = "0.15"
+env_logger = "0.11"
+log = "0.4"
+
