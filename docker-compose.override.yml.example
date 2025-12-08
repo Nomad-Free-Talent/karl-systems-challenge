@@ -1,0 +1,24 @@
+version: '3.8'
+
+# Development overrides
+# Copy this file to docker-compose.override.yml and customize as needed
+
+services:
+  auth-service:
+    environment:
+      LOG_LEVEL: debug
+    volumes:
+      - ./auth-service:/app/auth-service
+
+  weather-service:
+    environment:
+      LOG_LEVEL: debug
+    volumes:
+      - ./weather-service:/app/weather-service
+
+  time-service:
+    environment:
+      LOG_LEVEL: debug
+    volumes:
+      - ./time-service:/app/time-service
+
