@@ -1,0 +1,41 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./auth-service/Dockerfile
+          push: false
+          tags: auth-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      # Note: Actual deployment steps would go here
+      # This would typically involve:
+      # 1. SSH into deployment server
+      # 2. Pull latest images
+      # 3. Run docker-compose up
+      # 4. Health checks
+      
+      - name: Deployment placeholder
+        run: |
+          echo "Deployment would happen here"
+          echo "VM deployment steps would be configured based on provided infrastructure"
+
