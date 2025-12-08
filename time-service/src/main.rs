@@ -1,11 +1,14 @@
 mod config;
 mod middleware;
 mod cache;
+mod services;
+mod handlers;
 
 use actix_web::{web, App, HttpServer, Responder};
 use log::info;
 use config::Config;
 use cache::TimezoneCache;
+use services::WorldTimeClient;
 
 async fn health_check() -> impl Responder {
     "OK"
@@ -22,6 +25,8 @@ async fn main() -> std::io::Result<()> {
 
     // Initialize and populate timezone cache
     let cache = web::Data::new(TimezoneCache::new());
+    let client = web::Data::new(WorldTimeClient::new());
+    
     info!("Populating timezone cache...");
     if let Err(e) = cache.initialize().await {
         log::warn!("Failed to populate cache on startup: {}", e);
@@ -48,7 +53,15 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(config.clone()))
             .app_data(cache.clone())
+            .app_data(client.clone())
             .route("/health", web::get().to(health_check))
+            .service(
+                web::scope("/time")
+                    .wrap(middleware::JwtAuth::new(config.jwt_secret.clone()))
+                    .route("/{city}", web::get().to(handlers::time::get_time_for_city))
+                    .route("/timezone/{timezone}", web::get().to(handlers::time::get_time_for_timezone))
+                    .route("/timezones", web::get().to(handlers::time::list_timezones))
+            )
     })
     .bind(("0.0.0.0", config.port))?
     .run()
