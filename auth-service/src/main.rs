@@ -1,8 +1,8 @@
 use actix_web::{web, App, HttpServer, Responder};
-use log::info;
-use auth_service::{Config, create_pool};
-use sqlx::PgPool;
 use auth_service::handlers;
+use auth_service::{create_pool, Config};
+use log::info;
+use sqlx::PgPool;
 
 #[derive(Clone)]
 struct AppState {
@@ -20,11 +20,13 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let config = Config::from_env();
-    
-    info!("Starting auth-service on port {}", config.port);
+    let port = config.port;
+    let database_url = config.database_url.clone();
+
+    info!("Starting auth-service on port {}", port);
 
     // Initialize database connection pool
-    let pool = create_pool(&config.database_url)
+    let pool = create_pool(&database_url)
         .await
         .expect("Failed to create database pool");
 
@@ -42,11 +44,13 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/auth")
                     .route("/register", web::post().to(handlers::auth::register))
-                    .route("/login", web::post().to(handlers::auth::login))
+                    .route("/login", web::post().to(handlers::auth::login)),
             )
             .service(
                 web::scope("/admin")
-                    .wrap(auth_service::middleware::JwtAuth::new(config.jwt_secret.clone()))
+                    .wrap(auth_service::middleware::JwtAuth::new(
+                        config.jwt_secret.clone(),
+                    ))
                     .wrap(auth_service::middleware::AdminAuth)
                     .service(
                         web::scope("/users")
@@ -54,31 +58,33 @@ async fn main() -> std::io::Result<()> {
                             .route("", web::post().to(handlers::admin::create_user))
                             .route("/{id}", web::get().to(handlers::admin::get_user))
                             .route("/{id}", web::put().to(handlers::admin::update_user))
-                            .route("/{id}", web::delete().to(handlers::admin::delete_user))
+                            .route("/{id}", web::delete().to(handlers::admin::delete_user)),
                     )
                     .service(
                         web::scope("/roles")
                             .route("", web::get().to(handlers::admin::list_roles))
-                            .route("", web::post().to(handlers::admin::create_role))
+                            .route("", web::post().to(handlers::admin::create_role)),
                     )
                     .service(
                         web::scope("/permissions")
                             .route("", web::get().to(handlers::admin::list_permissions))
-                            .route("", web::post().to(handlers::admin::create_permission))
+                            .route("", web::post().to(handlers::admin::create_permission)),
                     )
                     .service(
                         web::scope("/users/{user_id}/roles")
                             .route("", web::post().to(handlers::admin::assign_role_to_user))
-                            .route("/{role_id}", web::delete().to(handlers::admin::remove_role_from_user))
+                            .route(
+                                "/{role_id}",
+                                web::delete().to(handlers::admin::remove_role_from_user),
+                            ),
                     )
-                    .service(
-                        web::scope("/roles/{role_id}/permissions")
-                            .route("", web::post().to(handlers::admin::assign_permission_to_role))
-                    )
+                    .service(web::scope("/roles/{role_id}/permissions").route(
+                        "",
+                        web::post().to(handlers::admin::assign_permission_to_role),
+                    )),
             )
     })
-    .bind(("0.0.0.0", config.port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }
-

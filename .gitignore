@@ -21,6 +21,7 @@ Cargo.lock
 *.db
 *.sqlite
 *.sqlite3
+.sqlx/
 
 # Logs
 *.log
