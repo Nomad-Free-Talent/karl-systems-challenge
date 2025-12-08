@@ -27,15 +27,29 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --features postgres --no-default-features
+      
       # Note: Actual deployment steps would go here
       # This would typically involve:
       # 1. SSH into deployment server
       # 2. Pull latest images
       # 3. Run docker-compose up
-      # 4. Health checks
+      # 4. Wait for services to be ready
+      # 5. Run database migrations
+      # 6. Health checks
       
-      - name: Deployment placeholder
+      - name: Deployment placeholder with migrations
         run: |
           echo "Deployment would happen here"
-          echo "VM deployment steps would be configured based on provided infrastructure"
+          echo "Steps would include:"
+          echo "1. Deploy services"
+          echo "2. Wait for PostgreSQL to be ready"
+          echo "3. Run: sqlx migrate run (in auth-service container or directly)"
+          echo "4. Verify all services are healthy"
+          echo ""
+          echo "Example migration command:"
+          echo "docker compose exec auth-service sqlx migrate run"
+          echo "OR"
+          echo "export DATABASE_URL=... && cd auth-service && sqlx migrate run"
 

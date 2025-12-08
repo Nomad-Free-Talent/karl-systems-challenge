@@ -45,6 +45,23 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --features postgres --no-default-features
+      
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+      
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/auth_db_test
+        working-directory: ./auth-service
+        run: sqlx migrate run
+      
       - name: Run tests
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/auth_db_test
