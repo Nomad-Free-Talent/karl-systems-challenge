@@ -3,6 +3,7 @@ use crate::services::providers::{MetaWeatherProvider, OpenMeteoProvider};
 use crate::services::{RateLimiter, WeatherProvider};
 use serde_json::Value;
 
+/// Aggregates weather data from multiple providers
 pub struct WeatherAggregator {
     metaweather: MetaWeatherProvider,
     openmeteo: OpenMeteoProvider,
@@ -34,6 +35,8 @@ impl WeatherAggregator {
         }
     }
 
+    /// Aggregate weather data from all available providers for a given city
+    /// Returns aggregated temperature, condition, humidity, and wind speed
     pub async fn aggregate_weather(&self, city: &str) -> Result<AggregatedWeather, String> {
         let mut sources = Vec::new();
         let mut temperatures = Vec::new();
