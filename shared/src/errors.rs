@@ -1,23 +1,30 @@
 use actix_web::{HttpResponse, ResponseError};
 use serde::{Deserialize, Serialize};
 
+/// Application error types for consistent error handling across services
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
+    /// Internal server error (500)
     #[error("Internal server error: {0}")]
     Internal(String),
 
+    /// Bad request error (400)
     #[error("Bad request: {0}")]
     BadRequest(String),
 
+    /// Unauthorized error (401)
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
 
+    /// Forbidden error (403)
     #[error("Forbidden: {0}")]
     Forbidden(String),
 
+    /// Not found error (404)
     #[error("Not found: {0}")]
     NotFound(String),
 
+    /// Conflict error (409)
     #[error("Conflict: {0}")]
     Conflict(String),
 }
