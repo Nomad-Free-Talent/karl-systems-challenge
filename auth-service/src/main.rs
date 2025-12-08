@@ -1,5 +1,10 @@
+mod config;
+mod db;
+
 use actix_web::{web, App, HttpServer, Responder};
 use log::info;
+use config::Config;
+use db::create_pool;
 
 async fn health_check() -> impl Responder {
     "OK"
@@ -10,18 +15,20 @@ async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    let port = std::env::var("PORT")
-        .unwrap_or_else(|_| "8000".to_string())
-        .parse::<u16>()
-        .expect("PORT must be a valid number");
+    let config = Config::from_env();
+    
+    info!("Starting auth-service on port {}", config.port);
 
-    info!("Starting auth-service on port {}", port);
+    // Initialize database connection pool
+    let _pool = create_pool(&config.database_url)
+        .await
+        .expect("Failed to create database pool");
 
     HttpServer::new(|| {
         App::new()
             .route("/health", web::get().to(health_check))
     })
-    .bind(("0.0.0.0", port))?
+    .bind(("0.0.0.0", config.port))?
     .run()
     .await
 }
