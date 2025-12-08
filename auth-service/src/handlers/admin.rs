@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use shared::{ApiResponse, AppError, AppResult};
 use crate::models::User;
-use crate::services::{hash_password, Claims};
+use crate::services::hash_password;
 use crate::handlers::auth::RegisterRequest;
 
 #[derive(Debug, Serialize)]

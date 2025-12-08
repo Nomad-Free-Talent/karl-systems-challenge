@@ -9,6 +9,7 @@ pub struct MetaWeatherProvider {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct LocationSearchResponse {
     woeid: i64,
     title: String,
@@ -17,6 +18,7 @@ struct LocationSearchResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct WeatherData {
     id: i64,
     weather_state_name: String,
@@ -36,6 +38,7 @@ struct WeatherData {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct ConsolidatedWeather {
     consolidated_weather: Vec<WeatherData>,
 }

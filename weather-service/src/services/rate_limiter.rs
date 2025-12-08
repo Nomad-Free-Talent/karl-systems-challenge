@@ -52,6 +52,7 @@ impl RateLimiter {
         last_calls.insert(provider_name.to_string(), Instant::now());
     }
 
+    #[allow(dead_code)] // Public API method for checking rate limit status
     pub async fn can_make_request(&self, provider: &WeatherProvider) -> bool {
         let provider_name = provider.as_str();
         let last_calls = self.last_calls.lock().await;

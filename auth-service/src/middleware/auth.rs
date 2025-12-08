@@ -9,7 +9,6 @@ use std::{
 };
 use shared::AppError;
 use crate::services::validate_token;
-use shared::Claims;
 
 pub struct JwtAuth {
     jwt_secret: String,

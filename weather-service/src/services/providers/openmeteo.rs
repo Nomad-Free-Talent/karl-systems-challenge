@@ -9,11 +9,13 @@ pub struct OpenMeteoProvider {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct GeocodingResponse {
     results: Vec<GeocodingResult>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct GeocodingResult {
     latitude: f64,
     longitude: f64,
@@ -22,6 +24,7 @@ struct GeocodingResult {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct CurrentWeather {
     temperature: f64,
     windspeed: f64,
@@ -31,6 +34,7 @@ struct CurrentWeather {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct WeatherResponse {
     current: CurrentWeather,
     current_units: HashMap<String, String>,

@@ -30,7 +30,6 @@ pub struct LoginResponse {
 
 pub async fn register(
     pool: web::Data<PgPool>,
-    config: web::Data<crate::config::Config>,
     req: web::Json<RegisterRequest>,
 ) -> AppResult<impl Responder> {
     // Validate input

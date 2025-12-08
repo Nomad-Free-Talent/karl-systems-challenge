@@ -2,13 +2,6 @@ use actix_web::{web, App, HttpServer, Responder};
 use auth_service::handlers;
 use auth_service::{create_pool, Config};
 use log::info;
-use sqlx::PgPool;
-
-#[derive(Clone)]
-struct AppState {
-    pool: PgPool,
-    config: Config,
-}
 
 async fn health_check() -> impl Responder {
     "OK"
@@ -30,14 +23,8 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create database pool");
 
-    let app_state = AppState {
-        pool: pool.clone(),
-        config: config.clone(),
-    };
-
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(app_state.clone()))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(pool.clone()))
             .route("/health", web::get().to(health_check))

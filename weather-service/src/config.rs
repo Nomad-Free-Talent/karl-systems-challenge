@@ -2,6 +2,7 @@ use std::env;
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    #[allow(dead_code)] // Reserved for future service-to-service communication
     pub auth_service_url: String,
     pub jwt_secret: String,
     pub port: u16,

@@ -1,5 +1,4 @@
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -57,14 +56,17 @@ impl WeatherCache {
         self.cache.insert(key, cached_data);
     }
 
+    #[allow(dead_code)] // Public API method for cache management
     pub fn remove(&self, key: &str) -> Option<CachedWeatherData> {
         self.cache.remove(key).map(|(_, v)| v)
     }
 
+    #[allow(dead_code)] // Public API method for cache management
     pub fn clear(&self) {
         self.cache.clear();
     }
 
+    #[allow(dead_code)] // Public API method for cache management
     pub fn cleanup_expired(&self) {
         self.cache.retain(|_, v| !v.is_expired());
     }
