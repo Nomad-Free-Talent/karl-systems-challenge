@@ -11,4 +11,6 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 actix-web = { workspace = true }
 uuid = { workspace = true }
+futures-util = { workspace = true }
+log = { workspace = true }
 
