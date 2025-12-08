@@ -1,5 +1,6 @@
 mod config;
 mod db;
+mod models;
 
 use actix_web::{web, App, HttpServer, Responder};
 use log::info;
