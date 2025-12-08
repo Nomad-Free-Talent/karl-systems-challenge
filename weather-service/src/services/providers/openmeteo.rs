@@ -36,8 +36,9 @@ struct CurrentWeather {
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)] // Fields needed for deserialization but not all are used
 struct WeatherResponse {
-    current: CurrentWeather,
-    current_units: HashMap<String, String>,
+    #[serde(rename = "current_weather")]
+    current_weather: CurrentWeather,
+    current_weather_units: HashMap<String, String>,
 }
 
 impl OpenMeteoProvider {
@@ -48,7 +49,7 @@ impl OpenMeteoProvider {
     }
 
     pub async fn geocode_city(&self, city: &str) -> Result<Option<(f64, f64)>, reqwest::Error> {
-        let url = format!("{}/search?name={}", BASE_URL.replace("/v1", ""), city);
+        let url = format!("https://geocoding-api.open-meteo.com/v1/search?name={}", city);
         let response = self.client.get(&url).send().await?;
         
         if response.status().is_success() {
@@ -73,7 +74,7 @@ impl OpenMeteoProvider {
         let data: WeatherResponse = response.json().await?;
         
         // Map weather code to condition (simplified)
-        let condition = match data.current.weathercode {
+        let condition = match data.current_weather.weathercode {
             0 => "Clear sky",
             1..=3 => "Partly cloudy",
             45..=48 => "Foggy",
@@ -86,10 +87,11 @@ impl OpenMeteoProvider {
         
         let mut weather = HashMap::new();
         weather.insert("provider".to_string(), serde_json::json!("openmeteo"));
-        weather.insert("temperature".to_string(), serde_json::json!(data.current.temperature));
+        weather.insert("temperature".to_string(), serde_json::json!(data.current_weather.temperature));
         weather.insert("condition".to_string(), serde_json::json!(condition));
-        weather.insert("wind_speed".to_string(), serde_json::json!(data.current.windspeed));
-        weather.insert("wind_direction".to_string(), serde_json::json!(data.current.winddirection));
+        // Convert km/h to m/s for consistency
+        weather.insert("wind_speed".to_string(), serde_json::json!(data.current_weather.windspeed / 3.6));
+        weather.insert("wind_direction".to_string(), serde_json::json!(data.current_weather.winddirection));
         
         Ok(serde_json::json!(weather))
     }

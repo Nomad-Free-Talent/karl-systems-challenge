@@ -1,6 +1,6 @@
-pub mod metaweather;
 pub mod openmeteo;
+pub mod wttrin;
 
-pub use metaweather::MetaWeatherProvider;
 pub use openmeteo::OpenMeteoProvider;
+pub use wttrin::WttrInProvider;
 

@@ -5,15 +5,15 @@ use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
 pub enum WeatherProvider {
-    MetaWeather,
     OpenMeteo,
+    WttrIn,
 }
 
 impl WeatherProvider {
     pub fn as_str(&self) -> &'static str {
         match self {
-            WeatherProvider::MetaWeather => "metaweather",
             WeatherProvider::OpenMeteo => "openmeteo",
+            WeatherProvider::WttrIn => "wttrin",
         }
     }
 }
