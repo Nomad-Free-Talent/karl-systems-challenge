@@ -169,7 +169,23 @@ curl http://localhost:8002/time/London \
 - [API Contracts](./API_CONTRACTS.md) - Detailed API documentation
 - [Architecture](./ARCHITECTURE.md) - System architecture and flowcharts
 
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `cargo test --workspace`
+5. Run clippy: `cargo clippy --workspace -- -D warnings`
+6. Check formatting: `cargo fmt --all -- --check`
+7. Submit a pull request
+
 ## License
 
 MIT
+
+## Acknowledgments
+
+- Built with Rust, Actix-web, Tokio, and SQLx
+- Uses free weather APIs: MetaWeather and Open-Meteo
+- Time data from WorldTimeAPI.org
 
