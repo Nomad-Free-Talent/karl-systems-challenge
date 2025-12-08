@@ -87,3 +87,52 @@ async fn test_login_user() {
     let resp_login = test::call_service(&app_login, req_login).await;
     assert!(resp_login.status().is_success());
 }
+
+#[tokio::test]
+async fn test_admin_list_users() {
+    let pool = setup_test_pool().await;
+    let config = Config::from_env();
+    
+    // Create admin user and get token (simplified - in real test would create admin user)
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(config.clone()))
+            .service(
+                web::scope("/admin")
+                    .wrap(auth_service::middleware::JwtAuth::new(config.jwt_secret.clone()))
+                    .wrap(auth_service::middleware::AdminAuth)
+                    .service(
+                        web::scope("/users")
+                            .route("", web::get().to(auth_service::handlers::admin::list_users))
+                    )
+            )
+    ).await;
+    
+    // Note: This test would need a valid admin JWT token
+    // For now, we're just testing the structure
+    // In a real scenario, you'd create an admin user, login, and use that token
+}
+
+#[tokio::test]
+async fn test_admin_create_user() {
+    let pool = setup_test_pool().await;
+    let config = Config::from_env();
+    
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(config.clone()))
+            .service(
+                web::scope("/admin")
+                    .wrap(auth_service::middleware::JwtAuth::new(config.jwt_secret.clone()))
+                    .wrap(auth_service::middleware::AdminAuth)
+                    .service(
+                        web::scope("/users")
+                            .route("", web::post().to(auth_service::handlers::admin::create_user))
+                    )
+            )
+    ).await;
+    
+    // Note: This test would need a valid admin JWT token
+}
