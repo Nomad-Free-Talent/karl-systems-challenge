@@ -66,6 +66,15 @@ async fn main() -> std::io::Result<()> {
                             .route("", web::get().to(handlers::admin::list_permissions))
                             .route("", web::post().to(handlers::admin::create_permission))
                     )
+                    .service(
+                        web::scope("/users/{user_id}/roles")
+                            .route("", web::post().to(handlers::admin::assign_role_to_user))
+                            .route("/{role_id}", web::delete().to(handlers::admin::remove_role_from_user))
+                    )
+                    .service(
+                        web::scope("/roles/{role_id}/permissions")
+                            .route("", web::post().to(handlers::admin::assign_permission_to_role))
+                    )
             )
     })
     .bind(("0.0.0.0", config.port))?

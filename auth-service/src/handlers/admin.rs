@@ -281,3 +281,106 @@ pub async fn create_permission(
     Ok(HttpResponse::Created().json(ApiResponse::new(response)))
 }
 
+// User-Role assignment endpoints
+
+#[derive(Debug, Deserialize)]
+pub struct AssignRoleRequest {
+    pub role_id: Uuid,
+}
+
+pub async fn assign_role_to_user(
+    pool: web::Data<PgPool>,
+    path: web::Path<Uuid>,
+    req: web::Json<AssignRoleRequest>,
+) -> AppResult<impl Responder> {
+    let user_id = path.into_inner();
+    let role_id = req.role_id;
+
+    // Verify user exists
+    User::find_by_id(&pool, user_id)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+        .ok_or_else(|| AppError::NotFound(format!("User with id {} not found", user_id)))?;
+
+    // Verify role exists
+    crate::models::Role::find_by_id(&pool, role_id)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+        .ok_or_else(|| AppError::NotFound(format!("Role with id {} not found", role_id)))?;
+
+    // Assign role
+    sqlx::query!(
+        "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        user_id,
+        role_id
+    )
+    .execute(&**pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Failed to assign role: {}", e)))?;
+
+    Ok(HttpResponse::Created().json(ApiResponse::with_message(
+        (),
+        format!("Role assigned to user successfully")
+    )))
+}
+
+pub async fn remove_role_from_user(
+    pool: web::Data<PgPool>,
+    path: web::Path<(Uuid, Uuid)>,
+) -> AppResult<impl Responder> {
+    let (user_id, role_id) = path.into_inner();
+
+    let result = sqlx::query!(
+        "DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2",
+        user_id,
+        role_id
+    )
+    .execute(&**pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Failed to remove role: {}", e)))?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("User-role assignment not found".to_string()));
+    }
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+// Role-Permission assignment endpoints
+
+#[derive(Debug, Deserialize)]
+pub struct AssignPermissionRequest {
+    pub permission_id: Uuid,
+}
+
+pub async fn assign_permission_to_role(
+    pool: web::Data<PgPool>,
+    path: web::Path<Uuid>,
+    req: web::Json<AssignPermissionRequest>,
+) -> AppResult<impl Responder> {
+    let role_id = path.into_inner();
+    let permission_id = req.permission_id;
+
+    // Verify role exists
+    crate::models::Role::find_by_id(&pool, role_id)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+        .ok_or_else(|| AppError::NotFound(format!("Role with id {} not found", role_id)))?;
+
+    // Verify permission exists
+    crate::models::Permission::find_by_id(&pool, permission_id)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+        .ok_or_else(|| AppError::NotFound(format!("Permission with id {} not found", permission_id)))?;
+
+    // Assign permission
+    crate::models::Role::assign_permission(&pool, role_id, permission_id)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to assign permission: {}", e)))?;
+
+    Ok(HttpResponse::Created().json(ApiResponse::with_message(
+        (),
+        format!("Permission assigned to role successfully")
+    )))
+}
+
