@@ -64,12 +64,36 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       
-      - name: Build all services
-        run: cargo build --workspace --release
+      - name: Build auth-service Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./auth-service/Dockerfile
+          push: false
+          tags: auth-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build weather-service Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./weather-service/Dockerfile
+          push: false
+          tags: weather-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build time-service Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./time-service/Dockerfile
+          push: false
+          tags: time-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
