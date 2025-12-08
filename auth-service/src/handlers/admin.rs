@@ -149,3 +149,135 @@ pub async fn delete_user(
     Ok(HttpResponse::NoContent().finish())
 }
 
+// Role management endpoints
+
+#[derive(Debug, Serialize)]
+pub struct RoleResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl From<crate::models::Role> for RoleResponse {
+    fn from(role: crate::models::Role) -> Self {
+        Self {
+            id: role.id,
+            name: role.name,
+            description: role.description,
+            created_at: role.created_at,
+        }
+    }
+}
+
+pub async fn list_roles(
+    pool: web::Data<PgPool>,
+) -> AppResult<impl Responder> {
+    let roles = crate::models::Role::list(&pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to list roles: {}", e)))?;
+
+    let response: Vec<RoleResponse> = roles.into_iter().map(|r| r.into()).collect();
+    Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateRoleRequest {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+pub async fn create_role(
+    pool: web::Data<PgPool>,
+    req: web::Json<CreateRoleRequest>,
+) -> AppResult<impl Responder> {
+    if req.name.is_empty() {
+        return Err(AppError::BadRequest("Role name is required".to_string()));
+    }
+
+    let role = crate::models::Role::create(
+        &pool,
+        &req.name,
+        req.description.as_deref(),
+    )
+    .await
+    .map_err(|e| {
+        if e.to_string().contains("unique") {
+            AppError::Conflict(format!("Role '{}' already exists", req.name))
+        } else {
+            AppError::Internal(format!("Failed to create role: {}", e))
+        }
+    })?;
+
+    let response: RoleResponse = role.into();
+    Ok(HttpResponse::Created().json(ApiResponse::new(response)))
+}
+
+// Permission management endpoints
+
+#[derive(Debug, Serialize)]
+pub struct PermissionResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub resource: String,
+    pub action: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl From<crate::models::Permission> for PermissionResponse {
+    fn from(permission: crate::models::Permission) -> Self {
+        Self {
+            id: permission.id,
+            name: permission.name,
+            resource: permission.resource,
+            action: permission.action,
+            created_at: permission.created_at,
+        }
+    }
+}
+
+pub async fn list_permissions(
+    pool: web::Data<PgPool>,
+) -> AppResult<impl Responder> {
+    let permissions = crate::models::Permission::list(&pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to list permissions: {}", e)))?;
+
+    let response: Vec<PermissionResponse> = permissions.into_iter().map(|p| p.into()).collect();
+    Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreatePermissionRequest {
+    pub name: String,
+    pub resource: String,
+    pub action: String,
+}
+
+pub async fn create_permission(
+    pool: web::Data<PgPool>,
+    req: web::Json<CreatePermissionRequest>,
+) -> AppResult<impl Responder> {
+    if req.name.is_empty() || req.resource.is_empty() || req.action.is_empty() {
+        return Err(AppError::BadRequest("Permission name, resource, and action are required".to_string()));
+    }
+
+    let permission = crate::models::Permission::create(
+        &pool,
+        &req.name,
+        &req.resource,
+        &req.action,
+    )
+    .await
+    .map_err(|e| {
+        if e.to_string().contains("unique") {
+            AppError::Conflict(format!("Permission '{}' already exists", req.name))
+        } else {
+            AppError::Internal(format!("Failed to create permission: {}", e))
+        }
+    })?;
+
+    let response: PermissionResponse = permission.into();
+    Ok(HttpResponse::Created().json(ApiResponse::new(response)))
+}
+
