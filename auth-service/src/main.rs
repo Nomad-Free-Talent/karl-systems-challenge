@@ -1,15 +1,8 @@
-mod config;
-mod db;
-mod models;
-mod services;
-mod handlers;
-mod middleware;
-
 use actix_web::{web, App, HttpServer, Responder};
 use log::info;
-use config::Config;
-use db::create_pool;
+use auth_service::{Config, create_pool};
 use sqlx::PgPool;
+use auth_service::handlers;
 
 #[derive(Clone)]
 struct AppState {
