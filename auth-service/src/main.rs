@@ -3,6 +3,7 @@ mod db;
 mod models;
 mod services;
 mod handlers;
+mod middleware;
 
 use actix_web::{web, App, HttpServer, Responder};
 use log::info;

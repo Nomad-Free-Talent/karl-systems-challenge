@@ -26,4 +26,5 @@ jsonwebtoken = { workspace = true }
 bcrypt = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
+futures-util = { workspace = true }
 

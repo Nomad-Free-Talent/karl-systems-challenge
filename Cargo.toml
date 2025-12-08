@@ -32,4 +32,5 @@ dashmap = "5.5"
 dotenv = "0.15"
 env_logger = "0.11"
 log = "0.4"
+futures-util = "0.3"
 
