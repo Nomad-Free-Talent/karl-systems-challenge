@@ -2,7 +2,6 @@ use actix_web::{web, HttpResponse, Responder};
 use shared::{ApiResponse, AppError, AppResult};
 use crate::cache::WeatherCache;
 use crate::services::WeatherAggregator;
-use crate::services::RateLimiter;
 use serde_json::json;
 
 pub async fn get_weather(

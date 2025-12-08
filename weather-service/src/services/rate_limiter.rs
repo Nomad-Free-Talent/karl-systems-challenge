@@ -33,18 +33,22 @@ impl RateLimiter {
 
     pub async fn wait_if_needed(&self, provider: &WeatherProvider) {
         let provider_name = provider.as_str();
-        let mut last_calls = self.last_calls.lock().await;
-
-        if let Some(last_call) = last_calls.get(provider_name) {
-            let elapsed = last_call.elapsed();
-            if elapsed < self.min_delay {
-                let wait_time = self.min_delay - elapsed;
-                drop(last_calls); // Release lock before sleeping
-                tokio::time::sleep(wait_time).await;
+        
+        // Check if we need to wait
+        {
+            let last_calls = self.last_calls.lock().await;
+            if let Some(last_call) = last_calls.get(provider_name) {
+                let elapsed = last_call.elapsed();
+                if elapsed < self.min_delay {
+                    let wait_time = self.min_delay - elapsed;
+                    drop(last_calls); // Release lock before sleeping
+                    tokio::time::sleep(wait_time).await;
+                }
             }
         }
 
         // Update last call time
+        let mut last_calls = self.last_calls.lock().await;
         last_calls.insert(provider_name.to_string(), Instant::now());
     }
 

@@ -32,6 +32,9 @@ async fn main() -> std::io::Result<()> {
     // Initialize aggregator
     let aggregator = web::Data::new(WeatherAggregator::new(rate_limiter));
 
+    let jwt_secret = config.jwt_secret.clone();
+    let port = config.port;
+    
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(config.clone()))
@@ -40,12 +43,12 @@ async fn main() -> std::io::Result<()> {
             .route("/health", web::get().to(health_check))
             .service(
                 web::scope("/weather")
-                    .wrap(middleware::JwtAuth::new(config.jwt_secret.clone()))
+                    .wrap(middleware::JwtAuth::new(jwt_secret.clone()))
                     .route("/{city}", web::get().to(handlers::weather::get_weather))
                     .route("/{city}/providers", web::get().to(handlers::weather::get_weather_providers))
             )
     })
-    .bind(("0.0.0.0", config.port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }

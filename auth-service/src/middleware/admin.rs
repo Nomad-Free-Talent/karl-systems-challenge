@@ -52,14 +52,17 @@ where
 
         Box::pin(async move {
             // Get claims from request extensions (set by JwtAuth middleware)
-            let claims = req.extensions()
-                .get::<Claims>()
-                .ok_or_else(|| {
-                    AppError::Unauthorized("Missing authentication".to_string())
-                })?;
+            let has_admin = {
+                let extensions = req.extensions();
+                let claims = extensions
+                    .get::<Claims>()
+                    .ok_or_else(|| {
+                        AppError::Unauthorized("Missing authentication".to_string())
+                    })?;
+                claims.roles.contains(&"admin".to_string())
+            };
 
-            // Check if user has admin role
-            if !claims.roles.contains(&"admin".to_string()) {
+            if !has_admin {
                 return Err(AppError::Forbidden("Admin access required".to_string()).into());
             }
 

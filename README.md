@@ -111,9 +111,15 @@ cargo build --workspace
 
 ### Testing
 
+**Note:** SQLx requires `DATABASE_URL` to be set for compile-time query checking. Set it before running tests:
+
 ```bash
+export DATABASE_URL=postgresql://user:pass@localhost/dbname
+export JWT_SECRET=test-secret-key
 cargo test --workspace
 ```
+
+Alternatively, you can create a `.env` file with these variables.
 
 ### Running Tests
 

@@ -49,6 +49,9 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    let jwt_secret = config.jwt_secret.clone();
+    let port = config.port;
+    
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(config.clone()))
@@ -57,13 +60,13 @@ async fn main() -> std::io::Result<()> {
             .route("/health", web::get().to(health_check))
             .service(
                 web::scope("/time")
-                    .wrap(middleware::JwtAuth::new(config.jwt_secret.clone()))
+                    .wrap(middleware::JwtAuth::new(jwt_secret.clone()))
                     .route("/{city}", web::get().to(handlers::time::get_time_for_city))
                     .route("/timezone/{timezone}", web::get().to(handlers::time::get_time_for_timezone))
                     .route("/timezones", web::get().to(handlers::time::list_timezones))
             )
     })
-    .bind(("0.0.0.0", config.port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }

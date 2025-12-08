@@ -2,6 +2,7 @@ use actix_web::{web, HttpResponse, Responder};
 use serde::Serialize;
 use shared::{ApiResponse, AppError, AppResult};
 use crate::cache::TimezoneCache;
+use crate::cache::timezone::TimezoneData;
 use crate::services::WorldTimeClient;
 
 #[derive(Debug, Serialize)]
@@ -75,7 +76,7 @@ pub async fn get_time_for_timezone(
         .map_err(|e| AppError::Internal(format!("Failed to fetch timezone: {}", e)))?;
 
     // Cache it
-    cache.set(timezone.clone(), crate::cache::TimezoneData {
+    cache.set(timezone.clone(), TimezoneData {
         timezone: timezone_data.timezone.clone(),
         datetime: timezone_data.datetime.clone(),
         utc_offset: timezone_data.utc_offset.clone(),

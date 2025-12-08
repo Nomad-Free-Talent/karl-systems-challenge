@@ -26,12 +26,8 @@ impl WorldTimeClient {
         let url = format!("{}/timezone/{}", BASE_URL, timezone);
         let response = self.client.get(&url).send().await?;
         
-        if response.status().is_success() {
-            let data: TimezoneResponse = response.json().await?;
-            Ok(data)
-        } else {
-            Err(reqwest::Error::from(response.status()))
-        }
+        let data: TimezoneResponse = response.json().await?;
+        Ok(data)
     }
 
     pub async fn get_time_for_city(&self, city: &str) -> Result<Option<TimezoneResponse>, reqwest::Error> {

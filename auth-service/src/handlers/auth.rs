@@ -43,13 +43,15 @@ pub async fn register(
     }
 
     // Check if username or email already exists
-    if User::find_by_username(&pool, &req.username).await?
+    if User::find_by_username(&pool, &req.username).await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
         .is_some()
     {
         return Err(AppError::Conflict("Username already exists".to_string()));
     }
 
-    if User::find_by_email(&pool, &req.email).await?
+    if User::find_by_email(&pool, &req.email).await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
         .is_some()
     {
         return Err(AppError::Conflict("Email already exists".to_string()));

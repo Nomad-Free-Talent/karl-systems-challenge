@@ -7,4 +7,5 @@ pub mod handlers;
 pub use config::Config;
 pub use cache::WeatherCache;
 pub use services::{WeatherAggregator, RateLimiter};
+pub use handlers::weather;
 

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use serde::Serialize;
 use crate::services::providers::{MetaWeatherProvider, OpenMeteoProvider};
 use crate::services::{RateLimiter, WeatherProvider};
 use serde_json::Value;
