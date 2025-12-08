@@ -18,36 +18,49 @@ services:
       timeout: 5s
       retries: 5
 
-  # Auth Service - to be configured in later commits
-  # auth-service:
-  #   build: ./auth-service
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     DATABASE_URL: postgres://postgres:postgres@postgres:5432/auth_db
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/auth_db
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      PORT: 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - karl-network
 
-  # Weather Service - to be configured in later commits
-  # weather-service:
-  #   build: ./weather-service
-  #   ports:
-  #     - "8001:8001"
-  #   environment:
-  #     AUTH_SERVICE_URL: http://auth-service:8000
-  #   depends_on:
-  #     - auth-service
+  weather-service:
+    build: ./weather-service
+    ports:
+      - "8001:8001"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      PORT: 8001
+    depends_on:
+      - auth-service
+    networks:
+      - karl-network
 
-  # Time Service - to be configured in later commits
-  # time-service:
-  #   build: ./time-service
-  #   ports:
-  #     - "8002:8002"
-  #   environment:
-  #     AUTH_SERVICE_URL: http://auth-service:8000
-  #   depends_on:
-  #     - auth-service
+  time-service:
+    build: ./time-service
+    ports:
+      - "8002:8002"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      PORT: 8002
+    depends_on:
+      - auth-service
+    networks:
+      - karl-network
+
+networks:
+  karl-network:
+    driver: bridge
 
 volumes:
   postgres_data:
