@@ -5,6 +5,10 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
+[lib]
+name = "time_service"
+path = "src/lib.rs"
+
 [[bin]]
 name = "time-service"
 path = "src/main.rs"
