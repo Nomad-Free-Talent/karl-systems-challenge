@@ -4,22 +4,11 @@ use actix_web::{
 };
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{decode, DecodingKey, Validation};
-use serde::{Deserialize, Serialize};
 use std::{
     future::{ready, Ready},
     rc::Rc,
 };
-use shared::AppError;
-use uuid::Uuid;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: Uuid,
-    pub username: String,
-    pub roles: Vec<String>,
-    pub exp: i64,
-    pub iat: i64,
-}
+use shared::{AppError, Claims};
 
 pub struct JwtAuth {
     jwt_secret: String,
