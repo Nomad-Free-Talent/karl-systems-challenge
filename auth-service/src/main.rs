@@ -44,6 +44,19 @@ async fn main() -> std::io::Result<()> {
                     .route("/register", web::post().to(handlers::auth::register))
                     .route("/login", web::post().to(handlers::auth::login))
             )
+            .service(
+                web::scope("/admin")
+                    .wrap(auth_service::middleware::JwtAuth::new(config.jwt_secret.clone()))
+                    .wrap(auth_service::middleware::AdminAuth)
+                    .service(
+                        web::scope("/users")
+                            .route("", web::get().to(handlers::admin::list_users))
+                            .route("", web::post().to(handlers::admin::create_user))
+                            .route("/{id}", web::get().to(handlers::admin::get_user))
+                            .route("/{id}", web::put().to(handlers::admin::update_user))
+                            .route("/{id}", web::delete().to(handlers::admin::delete_user))
+                    )
+            )
     })
     .bind(("0.0.0.0", config.port))?
     .run()
