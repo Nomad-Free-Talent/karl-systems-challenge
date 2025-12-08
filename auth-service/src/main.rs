@@ -48,6 +48,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/auth")
                     .route("/register", web::post().to(handlers::auth::register))
+                    .route("/login", web::post().to(handlers::auth::login))
             )
     })
     .bind(("0.0.0.0", config.port))?
