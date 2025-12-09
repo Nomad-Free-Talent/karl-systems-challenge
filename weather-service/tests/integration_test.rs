@@ -13,6 +13,7 @@ fn generate_test_token(jwt_secret: &str) -> String {
         sub: Uuid::new_v4(),
         username: "testuser".to_string(),
         roles: vec!["user".to_string()],
+        permissions: vec!["weather:read".to_string()],
         exp: (Utc::now().timestamp() + 3600), // 1 hour from now
         iat: Utc::now().timestamp(),
     };
