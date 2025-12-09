@@ -21,7 +21,7 @@
 *.db
 *.sqlite
 *.sqlite3
-.sqlx/
+# .sqlx/
 
 # Logs
 *.log

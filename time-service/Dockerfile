@@ -1,9 +1,14 @@
-FROM rust:1.75 as builder
+FROM rust:1.88 as builder
 WORKDIR /app
+
+ENV SQLX_OFFLINE=true
 
 # Copy workspace files
 COPY Cargo.toml Cargo.lock ./
+COPY .sqlx ./.sqlx
 COPY shared ./shared
+COPY auth-service ./auth-service
+COPY weather-service ./weather-service
 COPY time-service ./time-service
 
 # Build the application
