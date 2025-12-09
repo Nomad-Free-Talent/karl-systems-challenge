@@ -48,7 +48,7 @@ pub async fn register(
     // Check if username or email already exists
     if User::find_by_username(&pool, &req.username)
         .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
         .is_some()
     {
         return Err(AppError::Conflict("Username already exists".to_string()));
@@ -56,7 +56,7 @@ pub async fn register(
 
     if User::find_by_email(&pool, &req.email)
         .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
         .is_some()
     {
         return Err(AppError::Conflict("Email already exists".to_string()));
@@ -64,17 +64,17 @@ pub async fn register(
 
     // Hash password
     let password_hash = hash_password(&req.password)
-        .map_err(|e| AppError::Internal(format!("Failed to hash password: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
 
     // Create user
     let user = User::create(&pool, &req.username, &req.email, &password_hash)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to create user: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to create user: {e}")))?;
 
     // Assign default "user" role
     let user_role = Role::find_by_name(&pool, "user")
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to find user role: {}", e)))?
+        .map_err(|e| AppError::Internal(format!("Failed to find user role: {e}")))?
         .ok_or_else(|| AppError::Internal("Default user role not found".to_string()))?;
 
     sqlx::query!(
@@ -84,7 +84,7 @@ pub async fn register(
     )
     .execute(&**pool)
     .await
-    .map_err(|e| AppError::Internal(format!("Failed to assign role: {}", e)))?;
+    .map_err(|e| AppError::Internal(format!("Failed to assign role: {e}")))?;
 
     let response = RegisterResponse {
         user_id: user.id,
@@ -109,7 +109,7 @@ pub async fn login(
     // Find user by username
     let user = User::find_by_username(&pool, &req.username)
         .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
         .ok_or_else(|| AppError::Unauthorized("Invalid username or password".to_string()))?;
 
     // Check if user is active
@@ -119,21 +119,21 @@ pub async fn login(
 
     // Verify password
     verify_password(&req.password, &user.password_hash)
-        .map_err(|e| AppError::Internal(format!("Password verification error: {}", e)))?
+        .map_err(|e| AppError::Internal(format!("Password verification error: {e}")))?
         .then_some(())
         .ok_or_else(|| AppError::Unauthorized("Invalid username or password".to_string()))?;
 
     // Get user roles
     let roles = Role::get_user_roles(&pool, user.id)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to get user roles: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to get user roles: {e}")))?;
 
     let role_names: Vec<String> = roles.iter().map(|r| r.name.clone()).collect();
 
     // Generate JWT token
     let claims = Claims::new(user.id, user.username.clone(), role_names.clone());
     let token = generate_token(&claims, &config.jwt_secret)
-        .map_err(|e| AppError::Internal(format!("Failed to generate token: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to generate token: {e}")))?;
 
     let response = LoginResponse {
         token,

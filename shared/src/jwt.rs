@@ -9,4 +9,3 @@ pub struct Claims {
     pub exp: i64,
     pub iat: i64,
 }
-

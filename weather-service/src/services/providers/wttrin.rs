@@ -69,6 +69,12 @@ struct WttrInResponse {
     current_condition: Vec<CurrentCondition>,
 }
 
+impl Default for WttrInProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WttrInProvider {
     pub fn new() -> Self {
         Self {
@@ -79,23 +85,26 @@ impl WttrInProvider {
         }
     }
 
-    pub async fn get_weather_for_city(&self, city: &str) -> Result<Option<serde_json::Value>, reqwest::Error> {
+    pub async fn get_weather_for_city(
+        &self,
+        city: &str,
+    ) -> Result<Option<serde_json::Value>, reqwest::Error> {
         // wttr.in API format: https://wttr.in/{city}?format=j1
-        let url = format!("{}/{}?format=j1", BASE_URL, city);
+        let url = format!("{BASE_URL}/{city}?format=j1");
         let response = self.client.get(&url).send().await?;
-        
+
         if !response.status().is_success() {
             return Ok(None);
         }
 
         let data: WttrInResponse = response.json().await?;
-        
+
         if data.current_condition.is_empty() {
             return Ok(None);
         }
 
         let current = &data.current_condition[0];
-        
+
         // Parse temperature (comes as string)
         let temperature = current.temp_c.parse::<f64>().unwrap_or(0.0);
         let humidity = current.humidity.parse::<i64>().unwrap_or(0);
@@ -103,22 +112,32 @@ impl WttrInProvider {
         // Convert km/h to m/s (approximate conversion, or keep as km/h)
         // wttr.in provides km/h, but we'll convert to m/s to match other providers
         let wind_speed_ms = wind_speed_kmph / 3.6;
-        
-        let condition = current.weather_desc.first()
+
+        let condition = current
+            .weather_desc
+            .first()
             .map(|d| d.value.clone())
             .unwrap_or_else(|| "Unknown".to_string());
-        
+
         let mut weather = HashMap::new();
         weather.insert("provider".to_string(), serde_json::json!("wttrin"));
         weather.insert("temperature".to_string(), serde_json::json!(temperature));
         weather.insert("condition".to_string(), serde_json::json!(condition));
         weather.insert("humidity".to_string(), serde_json::json!(humidity));
         weather.insert("wind_speed".to_string(), serde_json::json!(wind_speed_ms));
-        weather.insert("wind_direction".to_string(), serde_json::json!(current.wind_dir_16_point));
-        weather.insert("pressure".to_string(), serde_json::json!(current.pressure.parse::<f64>().unwrap_or(0.0)));
-        weather.insert("visibility".to_string(), serde_json::json!(current.visibility.parse::<f64>().unwrap_or(0.0)));
-        
+        weather.insert(
+            "wind_direction".to_string(),
+            serde_json::json!(current.wind_dir_16_point),
+        );
+        weather.insert(
+            "pressure".to_string(),
+            serde_json::json!(current.pressure.parse::<f64>().unwrap_or(0.0)),
+        );
+        weather.insert(
+            "visibility".to_string(),
+            serde_json::json!(current.visibility.parse::<f64>().unwrap_or(0.0)),
+        );
+
         Ok(Some(serde_json::json!(weather)))
     }
 }
-

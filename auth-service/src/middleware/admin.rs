@@ -1,14 +1,14 @@
+use crate::services::Claims;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpMessage,
 };
 use futures_util::future::LocalBoxFuture;
+use shared::AppError;
 use std::{
     future::{ready, Ready},
     rc::Rc,
 };
-use shared::AppError;
-use crate::services::Claims;
 
 pub struct AdminAuth;
 
@@ -56,9 +56,7 @@ where
                 let extensions = req.extensions();
                 let claims = extensions
                     .get::<Claims>()
-                    .ok_or_else(|| {
-                        AppError::Unauthorized("Missing authentication".to_string())
-                    })?;
+                    .ok_or_else(|| AppError::Unauthorized("Missing authentication".to_string()))?;
                 claims.roles.contains(&"admin".to_string())
             };
 
@@ -71,4 +69,3 @@ where
         })
     }
 }
-

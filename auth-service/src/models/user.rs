@@ -180,4 +180,3 @@ impl User {
         Ok(result.rows_affected() > 0)
     }
 }
-

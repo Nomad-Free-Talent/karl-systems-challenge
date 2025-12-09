@@ -35,10 +35,13 @@ impl Claims {
 }
 
 /// Generate a JWT token from claims
-pub fn generate_token(claims: &Claims, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_token(
+    claims: &Claims,
+    secret: &str,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let header = Header::default();
     let encoding_key = EncodingKey::from_secret(secret.as_ref());
-    
+
     encode(&header, claims, &encoding_key)
 }
 
@@ -46,8 +49,7 @@ pub fn generate_token(claims: &Claims, secret: &str) -> Result<String, jsonwebto
 pub fn validate_token(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let decoding_key = DecodingKey::from_secret(secret.as_ref());
     let validation = Validation::default();
-    
+
     let token_data = decode::<Claims>(token, &decoding_key, &validation)?;
     Ok(token_data.claims)
 }
-

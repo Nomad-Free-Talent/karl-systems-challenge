@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimezoneData {
@@ -13,6 +13,12 @@ pub struct TimezoneData {
 
 pub struct TimezoneCache {
     cache: Arc<RwLock<HashMap<String, TimezoneData>>>,
+}
+
+impl Default for TimezoneCache {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TimezoneCache {
@@ -64,14 +70,19 @@ impl TimezoneCache {
     }
 
     async fn fetch_timezone_data(&self, timezone: &str) -> Result<TimezoneData, String> {
-        let url = format!("http://worldtimeapi.org/api/timezone/{}", timezone);
+        let url = format!("http://worldtimeapi.org/api/timezone/{timezone}");
         let client = reqwest::Client::new();
-        let response = client.get(&url).send().await
-            .map_err(|e| format!("Failed to fetch timezone data: {}", e))?;
+        let response = client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to fetch timezone data: {e}"))?;
 
         if response.status().is_success() {
-            let data: serde_json::Value = response.json().await
-                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            let data: serde_json::Value = response
+                .json()
+                .await
+                .map_err(|e| format!("Failed to parse response: {e}"))?;
 
             Ok(TimezoneData {
                 timezone: data["timezone"].as_str().unwrap_or(timezone).to_string(),
@@ -89,4 +100,3 @@ impl TimezoneCache {
         cache.keys().cloned().collect()
     }
 }
-

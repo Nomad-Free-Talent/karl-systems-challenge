@@ -1,13 +1,13 @@
-mod config;
-mod middleware;
 mod cache;
-mod services;
+mod config;
 mod handlers;
+mod middleware;
+mod services;
 
 use actix_web::{web, App, HttpServer, Responder};
-use log::info;
-use config::Config;
 use cache::TimezoneCache;
+use config::Config;
+use log::info;
 use services::WorldTimeClient;
 
 async fn health_check() -> impl Responder {
@@ -20,16 +20,16 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let config = Config::from_env();
-    
+
     info!("Starting time-service on port {}", config.port);
 
     // Initialize and populate timezone cache
     let cache = web::Data::new(TimezoneCache::new());
     let client = web::Data::new(WorldTimeClient::new());
-    
+
     info!("Populating timezone cache...");
     if let Err(e) = cache.initialize().await {
-        log::warn!("Failed to populate cache on startup: {}", e);
+        log::warn!("Failed to populate cache on startup: {e}");
     } else {
         info!("Timezone cache populated successfully");
     }
@@ -43,7 +43,7 @@ async fn main() -> std::io::Result<()> {
             let timezones = cache_refresh.list_timezones().await;
             for tz in timezones {
                 if let Err(e) = cache_refresh.refresh(&tz).await {
-                    log::warn!("Failed to refresh timezone {}: {}", tz, e);
+                    log::warn!("Failed to refresh timezone {tz}: {e}");
                 }
             }
         }
@@ -51,7 +51,7 @@ async fn main() -> std::io::Result<()> {
 
     let jwt_secret = config.jwt_secret.clone();
     let port = config.port;
-    
+
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(config.clone()))
@@ -62,12 +62,14 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/time")
                     .wrap(middleware::JwtAuth::new(jwt_secret.clone()))
                     .route("/{city}", web::get().to(handlers::time::get_time_for_city))
-                    .route("/timezone/{timezone}", web::get().to(handlers::time::get_time_for_timezone))
-                    .route("/timezones", web::get().to(handlers::time::list_timezones))
+                    .route(
+                        "/timezone/{timezone}",
+                        web::get().to(handlers::time::get_time_for_timezone),
+                    )
+                    .route("/timezones", web::get().to(handlers::time::list_timezones)),
             )
     })
     .bind(("0.0.0.0", port))?
     .run()
     .await
 }
-

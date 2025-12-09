@@ -1,6 +1,5 @@
-pub mod auth;
 pub mod admin;
+pub mod auth;
 
-pub use auth::JwtAuth;
 pub use admin::AdminAuth;
-
+pub use auth::JwtAuth;

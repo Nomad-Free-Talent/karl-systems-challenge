@@ -71,4 +71,3 @@ impl WeatherCache {
         self.cache.retain(|_, v| !v.is_expired());
     }
 }
-

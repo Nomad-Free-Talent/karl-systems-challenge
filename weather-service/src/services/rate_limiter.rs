@@ -33,7 +33,7 @@ impl RateLimiter {
 
     pub async fn wait_if_needed(&self, provider: &WeatherProvider) {
         let provider_name = provider.as_str();
-        
+
         // Check if we need to wait
         {
             let last_calls = self.last_calls.lock().await;
@@ -64,4 +64,3 @@ impl RateLimiter {
         }
     }
 }
-

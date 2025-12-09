@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use serde::Serialize;
-use crate::services::providers::{WttrInProvider, OpenMeteoProvider};
+use crate::services::providers::{OpenMeteoProvider, WttrInProvider};
 use crate::services::{RateLimiter, WeatherProvider};
+use serde::Serialize;
 use serde_json::Value;
+use std::collections::HashMap;
 
 /// Aggregates weather data from multiple providers
 pub struct WeatherAggregator {
@@ -46,10 +46,12 @@ impl WeatherAggregator {
         let mut wind_speeds = Vec::new();
 
         // Fetch from wttr.in
-        self.rate_limiter.wait_if_needed(&WeatherProvider::WttrIn).await;
+        self.rate_limiter
+            .wait_if_needed(&WeatherProvider::WttrIn)
+            .await;
         if let Ok(Some(weather)) = self.wttrin.get_weather_for_city(city).await {
             sources.push(weather.clone());
-            
+
             if let Some(temp) = weather.get("temperature").and_then(|v| v.as_f64()) {
                 temperatures.push(temp);
             }
@@ -65,10 +67,12 @@ impl WeatherAggregator {
         }
 
         // Fetch from OpenMeteo
-        self.rate_limiter.wait_if_needed(&WeatherProvider::OpenMeteo).await;
+        self.rate_limiter
+            .wait_if_needed(&WeatherProvider::OpenMeteo)
+            .await;
         if let Ok(Some(weather)) = self.openmeteo.get_weather_for_city(city).await {
             sources.push(weather.clone());
-            
+
             if let Some(temp) = weather.get("temperature").and_then(|v| v.as_f64()) {
                 temperatures.push(temp);
             }
@@ -130,4 +134,3 @@ impl WeatherAggregator {
         })
     }
 }
-

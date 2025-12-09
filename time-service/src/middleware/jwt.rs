@@ -4,11 +4,11 @@ use actix_web::{
 };
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{decode, DecodingKey, Validation};
+use shared::{AppError, Claims};
 use std::{
     future::{ready, Ready},
     rc::Rc,
 };
-use shared::{AppError, Claims};
 
 pub struct JwtAuth {
     jwt_secret: String,
@@ -62,21 +62,26 @@ where
         let jwt_secret = self.jwt_secret.clone();
 
         Box::pin(async move {
-            let auth_header = req.headers().get("Authorization")
+            let auth_header = req
+                .headers()
+                .get("Authorization")
                 .and_then(|h| h.to_str().ok())
                 .ok_or_else(|| {
                     AppError::Unauthorized("Missing Authorization header".to_string())
                 })?;
 
             if !auth_header.starts_with("Bearer ") {
-                return Err(AppError::Unauthorized("Invalid Authorization header format".to_string()).into());
+                return Err(AppError::Unauthorized(
+                    "Invalid Authorization header format".to_string(),
+                )
+                .into());
             }
 
             let token = auth_header.strip_prefix("Bearer ").unwrap();
 
             let decoding_key = DecodingKey::from_secret(jwt_secret.as_ref());
             let validation = Validation::default();
-            
+
             let token_data = decode::<Claims>(token, &decoding_key, &validation)
                 .map_err(|_| AppError::Unauthorized("Invalid or expired token".to_string()))?;
 
@@ -87,4 +92,3 @@ where
         })
     }
 }
-

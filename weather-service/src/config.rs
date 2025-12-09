@@ -10,11 +10,10 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let auth_service_url = env::var("AUTH_SERVICE_URL")
-            .unwrap_or_else(|_| "http://localhost:8000".to_string());
+        let auth_service_url =
+            env::var("AUTH_SERVICE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
 
-        let jwt_secret = env::var("JWT_SECRET")
-            .expect("JWT_SECRET must be set");
+        let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
         let port = env::var("PORT")
             .unwrap_or_else(|_| "8001".to_string())
@@ -28,4 +27,3 @@ impl Config {
         }
     }
 }
-

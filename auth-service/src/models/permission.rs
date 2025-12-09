@@ -71,7 +71,10 @@ impl Role {
         Ok(role)
     }
 
-    pub async fn find_by_name(pool: &sqlx::PgPool, name: &str) -> Result<Option<Self>, sqlx::Error> {
+    pub async fn find_by_name(
+        pool: &sqlx::PgPool,
+        name: &str,
+    ) -> Result<Option<Self>, sqlx::Error> {
         let role = sqlx::query_as!(
             Role,
             r#"
@@ -258,4 +261,3 @@ impl Permission {
         Ok(permissions)
     }
 }
-

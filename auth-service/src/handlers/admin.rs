@@ -1,11 +1,11 @@
-use actix_web::{web, HttpResponse, Responder};
-use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
-use uuid::Uuid;
-use shared::{ApiResponse, AppError, AppResult};
+use crate::handlers::auth::RegisterRequest;
 use crate::models::User;
 use crate::services::hash_password;
-use crate::handlers::auth::RegisterRequest;
+use actix_web::{web, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
+use shared::{ApiResponse, AppError, AppResult};
+use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
 pub struct UserResponse {
@@ -28,27 +28,22 @@ impl From<User> for UserResponse {
     }
 }
 
-pub async fn list_users(
-    pool: web::Data<PgPool>,
-) -> AppResult<impl Responder> {
+pub async fn list_users(pool: web::Data<PgPool>) -> AppResult<impl Responder> {
     let users = User::list(&pool)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to list users: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to list users: {e}")))?;
 
     let response: Vec<UserResponse> = users.into_iter().map(|u| u.into()).collect();
     Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
 }
 
-pub async fn get_user(
-    pool: web::Data<PgPool>,
-    path: web::Path<Uuid>,
-) -> AppResult<impl Responder> {
+pub async fn get_user(pool: web::Data<PgPool>, path: web::Path<Uuid>) -> AppResult<impl Responder> {
     let user_id = path.into_inner();
-    
+
     let user = User::find_by_id(&pool, user_id)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to get user: {}", e)))?
-        .ok_or_else(|| AppError::NotFound(format!("User with id {} not found", user_id)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to get user: {e}")))?
+        .ok_or_else(|| AppError::NotFound(format!("User with id {user_id} not found")))?;
 
     let response: UserResponse = user.into();
     Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
@@ -60,19 +55,23 @@ pub async fn create_user(
 ) -> AppResult<impl Responder> {
     // Validate input
     if req.username.is_empty() || req.email.is_empty() || req.password.is_empty() {
-        return Err(AppError::BadRequest("Username, email, and password are required".to_string()));
+        return Err(AppError::BadRequest(
+            "Username, email, and password are required".to_string(),
+        ));
     }
 
     // Check if username or email already exists
-    if User::find_by_username(&pool, &req.username).await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+    if User::find_by_username(&pool, &req.username)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
         .is_some()
     {
         return Err(AppError::Conflict("Username already exists".to_string()));
     }
 
-    if User::find_by_email(&pool, &req.email).await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+    if User::find_by_email(&pool, &req.email)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
         .is_some()
     {
         return Err(AppError::Conflict("Email already exists".to_string()));
@@ -80,17 +79,12 @@ pub async fn create_user(
 
     // Hash password
     let password_hash = hash_password(&req.password)
-        .map_err(|e| AppError::Internal(format!("Failed to hash password: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?;
 
     // Create user
-    let user = User::create(
-        &pool,
-        &req.username,
-        &req.email,
-        &password_hash,
-    )
-    .await
-    .map_err(|e| AppError::Internal(format!("Failed to create user: {}", e)))?;
+    let user = User::create(&pool, &req.username, &req.email, &password_hash)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to create user: {e}")))?;
 
     let response: UserResponse = user.into();
     Ok(HttpResponse::Created().json(ApiResponse::new(response)))
@@ -112,8 +106,10 @@ pub async fn update_user(
     let user_id = path.into_inner();
 
     let password_hash = if let Some(ref password) = req.password {
-        Some(hash_password(password)
-            .map_err(|e| AppError::Internal(format!("Failed to hash password: {}", e)))?)
+        Some(
+            hash_password(password)
+                .map_err(|e| AppError::Internal(format!("Failed to hash password: {e}")))?,
+        )
     } else {
         None
     };
@@ -127,8 +123,8 @@ pub async fn update_user(
 
     let user = User::update(&pool, user_id, &update)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to update user: {}", e)))?
-        .ok_or_else(|| AppError::NotFound(format!("User with id {} not found", user_id)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to update user: {e}")))?
+        .ok_or_else(|| AppError::NotFound(format!("User with id {user_id} not found")))?;
 
     let response: UserResponse = user.into();
     Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
@@ -142,10 +138,12 @@ pub async fn delete_user(
 
     let deleted = User::delete(&pool, user_id)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to delete user: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to delete user: {e}")))?;
 
     if !deleted {
-        return Err(AppError::NotFound(format!("User with id {} not found", user_id)));
+        return Err(AppError::NotFound(format!(
+            "User with id {user_id} not found"
+        )));
     }
 
     Ok(HttpResponse::NoContent().finish())
@@ -172,12 +170,10 @@ impl From<crate::models::Role> for RoleResponse {
     }
 }
 
-pub async fn list_roles(
-    pool: web::Data<PgPool>,
-) -> AppResult<impl Responder> {
+pub async fn list_roles(pool: web::Data<PgPool>) -> AppResult<impl Responder> {
     let roles = crate::models::Role::list(&pool)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to list roles: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to list roles: {e}")))?;
 
     let response: Vec<RoleResponse> = roles.into_iter().map(|r| r.into()).collect();
     Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
@@ -197,19 +193,15 @@ pub async fn create_role(
         return Err(AppError::BadRequest("Role name is required".to_string()));
     }
 
-    let role = crate::models::Role::create(
-        &pool,
-        &req.name,
-        req.description.as_deref(),
-    )
-    .await
-    .map_err(|e| {
-        if e.to_string().contains("unique") {
-            AppError::Conflict(format!("Role '{}' already exists", req.name))
-        } else {
-            AppError::Internal(format!("Failed to create role: {}", e))
-        }
-    })?;
+    let role = crate::models::Role::create(&pool, &req.name, req.description.as_deref())
+        .await
+        .map_err(|e| {
+            if e.to_string().contains("unique") {
+                AppError::Conflict(format!("Role '{}' already exists", req.name))
+            } else {
+                AppError::Internal(format!("Failed to create role: {e}"))
+            }
+        })?;
 
     let response: RoleResponse = role.into();
     Ok(HttpResponse::Created().json(ApiResponse::new(response)))
@@ -238,12 +230,10 @@ impl From<crate::models::Permission> for PermissionResponse {
     }
 }
 
-pub async fn list_permissions(
-    pool: web::Data<PgPool>,
-) -> AppResult<impl Responder> {
+pub async fn list_permissions(pool: web::Data<PgPool>) -> AppResult<impl Responder> {
     let permissions = crate::models::Permission::list(&pool)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to list permissions: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to list permissions: {e}")))?;
 
     let response: Vec<PermissionResponse> = permissions.into_iter().map(|p| p.into()).collect();
     Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
@@ -261,23 +251,21 @@ pub async fn create_permission(
     req: web::Json<CreatePermissionRequest>,
 ) -> AppResult<impl Responder> {
     if req.name.is_empty() || req.resource.is_empty() || req.action.is_empty() {
-        return Err(AppError::BadRequest("Permission name, resource, and action are required".to_string()));
+        return Err(AppError::BadRequest(
+            "Permission name, resource, and action are required".to_string(),
+        ));
     }
 
-    let permission = crate::models::Permission::create(
-        &pool,
-        &req.name,
-        &req.resource,
-        &req.action,
-    )
-    .await
-    .map_err(|e| {
-        if e.to_string().contains("unique") {
-            AppError::Conflict(format!("Permission '{}' already exists", req.name))
-        } else {
-            AppError::Internal(format!("Failed to create permission: {}", e))
-        }
-    })?;
+    let permission =
+        crate::models::Permission::create(&pool, &req.name, &req.resource, &req.action)
+            .await
+            .map_err(|e| {
+                if e.to_string().contains("unique") {
+                    AppError::Conflict(format!("Permission '{}' already exists", req.name))
+                } else {
+                    AppError::Internal(format!("Failed to create permission: {e}"))
+                }
+            })?;
 
     let response: PermissionResponse = permission.into();
     Ok(HttpResponse::Created().json(ApiResponse::new(response)))
@@ -301,14 +289,14 @@ pub async fn assign_role_to_user(
     // Verify user exists
     User::find_by_id(&pool, user_id)
         .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
-        .ok_or_else(|| AppError::NotFound(format!("User with id {} not found", user_id)))?;
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
+        .ok_or_else(|| AppError::NotFound(format!("User with id {user_id} not found")))?;
 
     // Verify role exists
     crate::models::Role::find_by_id(&pool, role_id)
         .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
-        .ok_or_else(|| AppError::NotFound(format!("Role with id {} not found", role_id)))?;
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
+        .ok_or_else(|| AppError::NotFound(format!("Role with id {role_id} not found")))?;
 
     // Assign role
     sqlx::query!(
@@ -318,11 +306,11 @@ pub async fn assign_role_to_user(
     )
     .execute(&**pool)
     .await
-    .map_err(|e| AppError::Internal(format!("Failed to assign role: {}", e)))?;
+    .map_err(|e| AppError::Internal(format!("Failed to assign role: {e}")))?;
 
     Ok(HttpResponse::Created().json(ApiResponse::with_message(
         (),
-        format!("Role assigned to user successfully")
+        "Role assigned to user successfully".to_string(),
     )))
 }
 
@@ -339,10 +327,12 @@ pub async fn remove_role_from_user(
     )
     .execute(&**pool)
     .await
-    .map_err(|e| AppError::Internal(format!("Failed to remove role: {}", e)))?;
+    .map_err(|e| AppError::Internal(format!("Failed to remove role: {e}")))?;
 
     if result.rows_affected() == 0 {
-        return Err(AppError::NotFound("User-role assignment not found".to_string()));
+        return Err(AppError::NotFound(
+            "User-role assignment not found".to_string(),
+        ));
     }
 
     Ok(HttpResponse::NoContent().finish())
@@ -366,23 +356,24 @@ pub async fn assign_permission_to_role(
     // Verify role exists
     crate::models::Role::find_by_id(&pool, role_id)
         .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
-        .ok_or_else(|| AppError::NotFound(format!("Role with id {} not found", role_id)))?;
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
+        .ok_or_else(|| AppError::NotFound(format!("Role with id {role_id} not found")))?;
 
     // Verify permission exists
     crate::models::Permission::find_by_id(&pool, permission_id)
         .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
-        .ok_or_else(|| AppError::NotFound(format!("Permission with id {} not found", permission_id)))?;
+        .map_err(|e| AppError::Internal(format!("Database error: {e}")))?
+        .ok_or_else(|| {
+            AppError::NotFound(format!("Permission with id {permission_id} not found"))
+        })?;
 
     // Assign permission
     crate::models::Role::assign_permission(&pool, role_id, permission_id)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to assign permission: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to assign permission: {e}")))?;
 
     Ok(HttpResponse::Created().json(ApiResponse::with_message(
         (),
-        format!("Permission assigned to role successfully")
+        "Permission assigned to role successfully".to_string(),
     )))
 }
-

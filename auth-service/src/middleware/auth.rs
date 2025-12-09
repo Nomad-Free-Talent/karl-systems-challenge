@@ -1,14 +1,14 @@
+use crate::services::validate_token;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpMessage,
 };
 use futures_util::future::LocalBoxFuture;
+use shared::AppError;
 use std::{
     future::{ready, Ready},
     rc::Rc,
 };
-use shared::AppError;
-use crate::services::validate_token;
 
 pub struct JwtAuth {
     jwt_secret: String,
@@ -63,14 +63,19 @@ where
 
         Box::pin(async move {
             // Extract token from Authorization header
-            let auth_header = req.headers().get("Authorization")
+            let auth_header = req
+                .headers()
+                .get("Authorization")
                 .and_then(|h| h.to_str().ok())
                 .ok_or_else(|| {
                     AppError::Unauthorized("Missing Authorization header".to_string())
                 })?;
 
             if !auth_header.starts_with("Bearer ") {
-                return Err(AppError::Unauthorized("Invalid Authorization header format".to_string()).into());
+                return Err(AppError::Unauthorized(
+                    "Invalid Authorization header format".to_string(),
+                )
+                .into());
             }
 
             let token = auth_header.strip_prefix("Bearer ").unwrap();
@@ -87,4 +92,3 @@ where
         })
     }
 }
-

@@ -21,4 +21,3 @@ impl<T> ApiResponse<T> {
         }
     }
 }
-

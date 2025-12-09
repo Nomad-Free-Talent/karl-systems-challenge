@@ -1,8 +1,8 @@
-use actix_web::{web, HttpResponse, Responder};
-use shared::{ApiResponse, AppError, AppResult};
 use crate::cache::WeatherCache;
 use crate::services::WeatherAggregator;
+use actix_web::{web, HttpResponse, Responder};
 use serde_json::json;
+use shared::{ApiResponse, AppError, AppResult};
 
 pub async fn get_weather(
     cache: web::Data<WeatherCache>,
@@ -21,9 +21,10 @@ pub async fn get_weather(
     }
 
     // Fetch fresh data
-    let aggregated = aggregator.aggregate_weather(&city)
+    let aggregated = aggregator
+        .aggregate_weather(&city)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to aggregate weather: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to aggregate weather: {e}")))?;
 
     let response_data = json!({
         "city": aggregated.city,
@@ -49,10 +50,10 @@ pub async fn get_weather_providers(
 ) -> AppResult<impl Responder> {
     let city = path.into_inner();
 
-    let aggregated = aggregator.aggregate_weather(&city)
+    let aggregated = aggregator
+        .aggregate_weather(&city)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to aggregate weather: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to aggregate weather: {e}")))?;
 
     Ok(HttpResponse::Ok().json(ApiResponse::new(aggregated.sources)))
 }
-

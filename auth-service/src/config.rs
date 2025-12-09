@@ -9,11 +9,9 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let database_url = env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set");
+        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-        let jwt_secret = env::var("JWT_SECRET")
-            .expect("JWT_SECRET must be set");
+        let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
         let port = env::var("PORT")
             .unwrap_or_else(|_| "8000".to_string())
@@ -27,4 +25,3 @@ impl Config {
         }
     }
 }
-

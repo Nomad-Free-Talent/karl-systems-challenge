@@ -16,7 +16,7 @@ async fn main() -> std::io::Result<()> {
     let port = config.port;
     let database_url = config.database_url.clone();
 
-    info!("Starting auth-service on port {}", port);
+    info!("Starting auth-service on port {port}");
 
     // Initialize database connection pool
     let pool = create_pool(&database_url)

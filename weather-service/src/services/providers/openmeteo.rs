@@ -41,6 +41,12 @@ struct WeatherResponse {
     current_weather_units: HashMap<String, String>,
 }
 
+impl Default for OpenMeteoProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenMeteoProvider {
     pub fn new() -> Self {
         Self {
@@ -49,9 +55,9 @@ impl OpenMeteoProvider {
     }
 
     pub async fn geocode_city(&self, city: &str) -> Result<Option<(f64, f64)>, reqwest::Error> {
-        let url = format!("https://geocoding-api.open-meteo.com/v1/search?name={}", city);
+        let url = format!("https://geocoding-api.open-meteo.com/v1/search?name={city}");
         let response = self.client.get(&url).send().await?;
-        
+
         if response.status().is_success() {
             let data: GeocodingResponse = response.json().await?;
             if let Some(result) = data.results.first() {
@@ -64,15 +70,18 @@ impl OpenMeteoProvider {
         }
     }
 
-    pub async fn get_weather(&self, latitude: f64, longitude: f64) -> Result<serde_json::Value, reqwest::Error> {
+    pub async fn get_weather(
+        &self,
+        latitude: f64,
+        longitude: f64,
+    ) -> Result<serde_json::Value, reqwest::Error> {
         let url = format!(
-            "{}/forecast?latitude={}&longitude={}&current_weather=true",
-            BASE_URL, latitude, longitude
+            "{BASE_URL}/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
         );
         let response = self.client.get(&url).send().await?;
         let response = response.error_for_status()?;
         let data: WeatherResponse = response.json().await?;
-        
+
         // Map weather code to condition (simplified)
         let condition = match data.current_weather.weathercode {
             0 => "Clear sky",
@@ -84,19 +93,31 @@ impl OpenMeteoProvider {
             95..=99 => "Thunderstorm",
             _ => "Unknown",
         };
-        
+
         let mut weather = HashMap::new();
         weather.insert("provider".to_string(), serde_json::json!("openmeteo"));
-        weather.insert("temperature".to_string(), serde_json::json!(data.current_weather.temperature));
+        weather.insert(
+            "temperature".to_string(),
+            serde_json::json!(data.current_weather.temperature),
+        );
         weather.insert("condition".to_string(), serde_json::json!(condition));
         // Convert km/h to m/s for consistency
-        weather.insert("wind_speed".to_string(), serde_json::json!(data.current_weather.windspeed / 3.6));
-        weather.insert("wind_direction".to_string(), serde_json::json!(data.current_weather.winddirection));
-        
+        weather.insert(
+            "wind_speed".to_string(),
+            serde_json::json!(data.current_weather.windspeed / 3.6),
+        );
+        weather.insert(
+            "wind_direction".to_string(),
+            serde_json::json!(data.current_weather.winddirection),
+        );
+
         Ok(serde_json::json!(weather))
     }
 
-    pub async fn get_weather_for_city(&self, city: &str) -> Result<Option<serde_json::Value>, reqwest::Error> {
+    pub async fn get_weather_for_city(
+        &self,
+        city: &str,
+    ) -> Result<Option<serde_json::Value>, reqwest::Error> {
         if let Some((lat, lon)) = self.geocode_city(city).await? {
             self.get_weather(lat, lon).await.map(Some)
         } else {
@@ -104,4 +125,3 @@ impl OpenMeteoProvider {
         }
     }
 }
-

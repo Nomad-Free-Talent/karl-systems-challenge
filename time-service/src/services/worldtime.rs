@@ -15,6 +15,12 @@ pub struct TimezoneResponse {
     pub unixtime: i64,
 }
 
+impl Default for WorldTimeClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorldTimeClient {
     pub fn new() -> Self {
         Self {
@@ -23,14 +29,17 @@ impl WorldTimeClient {
     }
 
     pub async fn get_timezone(&self, timezone: &str) -> Result<TimezoneResponse, reqwest::Error> {
-        let url = format!("{}/timezone/{}", BASE_URL, timezone);
+        let url = format!("{BASE_URL}/timezone/{timezone}");
         let response = self.client.get(&url).send().await?;
-        
+
         let data: TimezoneResponse = response.json().await?;
         Ok(data)
     }
 
-    pub async fn get_time_for_city(&self, city: &str) -> Result<Option<TimezoneResponse>, reqwest::Error> {
+    pub async fn get_time_for_city(
+        &self,
+        city: &str,
+    ) -> Result<Option<TimezoneResponse>, reqwest::Error> {
         // Map common city names to timezones (simplified)
         let timezone = match city.to_lowercase().as_str() {
             "london" => "Europe/London",
@@ -49,4 +58,3 @@ impl WorldTimeClient {
         self.get_timezone(timezone).await.map(Some)
     }
 }
-

@@ -52,4 +52,3 @@ pub struct ErrorResponse {
 }
 
 pub type AppResult<T> = Result<T, AppError>;
-
