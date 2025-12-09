@@ -61,12 +61,12 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/time")
                     .wrap(middleware::JwtAuth::new(jwt_secret.clone()))
-                    .route("/{city}", web::get().to(handlers::time::get_time_for_city))
+                    .route("/timezones", web::get().to(handlers::time::list_timezones))
                     .route(
                         "/timezone/{timezone}",
                         web::get().to(handlers::time::get_time_for_timezone),
                     )
-                    .route("/timezones", web::get().to(handlers::time::list_timezones)),
+                    .route("/{city}", web::get().to(handlers::time::get_time_for_city)),
             )
     })
     .bind(("0.0.0.0", port))?

@@ -21,39 +21,85 @@ pub async fn get_time_for_city(
 ) -> AppResult<impl Responder> {
     let city = path.into_inner();
 
-    // Try to get from cache first
-    if let Some(cached) = client
-        .get_time_for_city(&city)
-        .await
-        .map_err(|e| AppError::Internal(format!("Failed to fetch time: {e}")))?
-    {
+    // Map city to timezone
+    let timezone = match city.to_lowercase().as_str() {
+        "london" => "Europe/London",
+        "new york" | "nyc" => "America/New_York",
+        "los angeles" | "la" => "America/Los_Angeles",
+        "tokyo" => "Asia/Tokyo",
+        "shanghai" => "Asia/Shanghai",
+        "paris" => "Europe/Paris",
+        "berlin" => "Europe/Berlin",
+        "sydney" => "Australia/Sydney",
+        "chicago" => "America/Chicago",
+        "toronto" => "America/Toronto",
+        _ => return Err(AppError::NotFound(format!("City not supported: {}", city))),
+    };
+
+    // Check cache first (this is the primary source)
+    if let Some(cached_data) = cache.get(timezone).await {
         let response = TimeResponse {
             city: city.clone(),
-            timezone: cached.timezone,
-            datetime: cached.datetime,
-            utc_offset: cached.utc_offset,
-            unix_time: cached.unixtime,
+            timezone: cached_data.timezone,
+            datetime: cached_data.datetime,
+            utc_offset: cached_data.utc_offset,
+            unix_time: cached_data.unix_time,
         };
         return Ok(HttpResponse::Ok().json(ApiResponse::new(response)));
     }
 
-    // If not in cache, fetch from API
-    let timezone_data = cache.get(&city).await;
+    // If not in cache, try to fetch from API (may fail, but worth trying)
+    // This will only succeed if API is available
+    // Use a timeout to prevent hanging on slow/failed API calls
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        client.get_time_for_city(&city)
+    ).await {
+        Ok(Ok(Some(api_data))) => {
+            // Cache the result for future use
+            cache
+                .set(
+                    timezone.to_string(),
+                    TimezoneData {
+                        timezone: api_data.timezone.clone(),
+                        datetime: api_data.datetime.clone(),
+                        utc_offset: api_data.utc_offset.clone(),
+                        unix_time: api_data.unixtime,
+                    },
+                )
+                .await;
 
-    if let Some(data) = timezone_data {
-        let response = TimeResponse {
-            city: city.clone(),
-            timezone: data.timezone,
-            datetime: data.datetime,
-            utc_offset: data.utc_offset,
-            unix_time: data.unix_time,
-        };
-        Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
-    } else {
-        Err(AppError::NotFound(format!(
-            "Time data not found for city: {city}"
-        )))
+            let response = TimeResponse {
+                city: city.clone(),
+                timezone: api_data.timezone,
+                datetime: api_data.datetime,
+                utc_offset: api_data.utc_offset,
+                unix_time: api_data.unixtime,
+            };
+            return Ok(HttpResponse::Ok().json(ApiResponse::new(response)));
+        }
+        Ok(Ok(None)) => {
+            // City not supported by API
+            return Err(AppError::NotFound(format!(
+                "City not supported: {}",
+                city
+            )));
+        }
+        Ok(Err(e)) => {
+            // API call failed - log but don't expose internal error
+            log::warn!("API call failed for city {}: {}", city, e);
+        }
+        Err(_) => {
+            // Timeout - API is too slow
+            log::warn!("API call timed out for city: {}", city);
+        }
     }
+
+    // If both cache and API fail, return error
+    Err(AppError::NotFound(format!(
+        "Time data not found for city: {} (cache miss and API unavailable). Please try again later.",
+        city
+    )))
 }
 
 pub async fn get_time_for_timezone(
@@ -63,7 +109,7 @@ pub async fn get_time_for_timezone(
 ) -> AppResult<impl Responder> {
     let timezone = path.into_inner();
 
-    // Check cache first
+    // Check cache first (primary source)
     if let Some(cached) = cache.get(&timezone).await {
         let response = TimeResponse {
             city: timezone.clone(),
@@ -75,34 +121,50 @@ pub async fn get_time_for_timezone(
         return Ok(HttpResponse::Ok().json(ApiResponse::new(response)));
     }
 
-    // Fetch from API
-    let timezone_data = client
-        .get_timezone(&timezone)
-        .await
-        .map_err(|e| AppError::Internal(format!("Failed to fetch timezone: {e}")))?;
+    // If not in cache, try to fetch from API (may fail, but worth trying)
+    // Use a timeout to prevent hanging on slow/failed API calls
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        client.get_timezone(&timezone)
+    ).await {
+        Ok(Ok(timezone_data)) => {
+            // Cache the result for future use
+            cache
+                .set(
+                    timezone.clone(),
+                    TimezoneData {
+                        timezone: timezone_data.timezone.clone(),
+                        datetime: timezone_data.datetime.clone(),
+                        utc_offset: timezone_data.utc_offset.clone(),
+                        unix_time: timezone_data.unixtime,
+                    },
+                )
+                .await;
 
-    // Cache it
-    cache
-        .set(
-            timezone.clone(),
-            TimezoneData {
-                timezone: timezone_data.timezone.clone(),
-                datetime: timezone_data.datetime.clone(),
-                utc_offset: timezone_data.utc_offset.clone(),
+            let response = TimeResponse {
+                city: timezone.clone(),
+                timezone: timezone_data.timezone,
+                datetime: timezone_data.datetime,
+                utc_offset: timezone_data.utc_offset,
                 unix_time: timezone_data.unixtime,
-            },
-        )
-        .await;
+            };
+            return Ok(HttpResponse::Ok().json(ApiResponse::new(response)));
+        }
+        Ok(Err(e)) => {
+            // API call failed - log but don't expose internal error
+            log::warn!("API call failed for timezone {}: {}", timezone, e);
+        }
+        Err(_) => {
+            // Timeout - API is too slow
+            log::warn!("API call timed out for timezone: {}", timezone);
+        }
+    }
 
-    let response = TimeResponse {
-        city: timezone.clone(),
-        timezone: timezone_data.timezone,
-        datetime: timezone_data.datetime,
-        utc_offset: timezone_data.utc_offset,
-        unix_time: timezone_data.unixtime,
-    };
-
-    Ok(HttpResponse::Ok().json(ApiResponse::new(response)))
+    // If both cache and API fail, return error
+    Err(AppError::NotFound(format!(
+        "Time data not found for timezone: {} (cache miss and API unavailable). Please try again later.",
+        timezone
+    )))
 }
 
 pub async fn list_timezones(cache: web::Data<TimezoneCache>) -> AppResult<impl Responder> {
