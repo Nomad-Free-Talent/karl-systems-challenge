@@ -1,6 +1,10 @@
 FROM rust:1.75 as builder
 WORKDIR /app
 
+# Accept DATABASE_URL as build argument for SQLx compile-time query checking
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Copy workspace files
 COPY Cargo.toml Cargo.lock ./
 COPY shared ./shared
