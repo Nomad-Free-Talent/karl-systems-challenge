@@ -1,9 +1,7 @@
 FROM rust:1.88 as builder
 WORKDIR /app
 
-# Accept DATABASE_URL as build argument for SQLx compile-time query checking
-ARG DATABASE_URL
-ENV DATABASE_URL=${DATABASE_URL}
+# Enable SQLx offline mode - no database connection needed during build
 ENV SQLX_OFFLINE=true
 
 # Copy workspace files

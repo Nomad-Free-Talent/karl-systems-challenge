@@ -11,42 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: auth_db_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      
-      - name: Wait for PostgreSQL
-        run: |
-          until pg_isready -h localhost -p 5432 -U postgres; do
-            echo "Waiting for PostgreSQL..."
-            sleep 2
-          done
-          echo "PostgreSQL is ready!"
-      
-      - name: Run database migrations
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/auth_db_test
-        working-directory: ./auth-service
-        run: |
-          cargo install sqlx-cli --features postgres --no-default-features
-          sqlx migrate run
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -58,13 +24,8 @@ jobs:
           file: ./auth-service/Dockerfile
           push: false
           tags: auth-service:${{ github.sha }}
-          build-args: |
-            DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432/auth_db_test
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
-      - name: Install SQLx CLI
-        run: cargo install sqlx-cli --features postgres --no-default-features
       
       # Note: Actual deployment steps would go here
       # This would typically involve:

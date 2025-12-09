@@ -1,8 +1,6 @@
 FROM rust:1.88 as builder
 WORKDIR /app
 
-ENV SQLX_OFFLINE=true
-
 # Copy workspace files
 COPY Cargo.toml Cargo.lock ./
 COPY .sqlx ./.sqlx
