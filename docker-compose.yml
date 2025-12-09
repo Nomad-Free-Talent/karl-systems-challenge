@@ -17,9 +17,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - karl-network
 
   auth-service:
-    build: ./auth-service
+    build:
+      context: .
+      dockerfile: ./auth-service/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -33,7 +37,9 @@ services:
       - karl-network
 
   weather-service:
-    build: ./weather-service
+    build:
+      context: .
+      dockerfile: ./weather-service/Dockerfile
     ports:
       - "8001:8001"
     environment:
@@ -46,7 +52,9 @@ services:
       - karl-network
 
   time-service:
-    build: ./time-service
+    build:
+      context: .
+      dockerfile: ./time-service/Dockerfile
     ports:
       - "8002:8002"
     environment:
