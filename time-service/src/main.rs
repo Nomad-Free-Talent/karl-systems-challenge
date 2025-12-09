@@ -61,6 +61,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/time")
                     .wrap(middleware::JwtAuth::new(jwt_secret.clone()))
+                    .wrap(middleware::PermissionCheck::new("time:read".to_string()))
                     .route("/timezones", web::get().to(handlers::time::list_timezones))
                     .route(
                         "/timezone/{timezone}",

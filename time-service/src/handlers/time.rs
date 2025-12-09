@@ -53,8 +53,10 @@ pub async fn get_time_for_city(
     // Use a timeout to prevent hanging on slow/failed API calls
     match tokio::time::timeout(
         std::time::Duration::from_secs(5),
-        client.get_time_for_city(&city)
-    ).await {
+        client.get_time_for_city(&city),
+    )
+    .await
+    {
         Ok(Ok(Some(api_data))) => {
             // Cache the result for future use
             cache
@@ -80,10 +82,7 @@ pub async fn get_time_for_city(
         }
         Ok(Ok(None)) => {
             // City not supported by API
-            return Err(AppError::NotFound(format!(
-                "City not supported: {}",
-                city
-            )));
+            return Err(AppError::NotFound(format!("City not supported: {}", city)));
         }
         Ok(Err(e)) => {
             // API call failed - log but don't expose internal error
@@ -125,8 +124,10 @@ pub async fn get_time_for_timezone(
     // Use a timeout to prevent hanging on slow/failed API calls
     match tokio::time::timeout(
         std::time::Duration::from_secs(5),
-        client.get_timezone(&timezone)
-    ).await {
+        client.get_timezone(&timezone),
+    )
+    .await
+    {
         Ok(Ok(timezone_data)) => {
             // Cache the result for future use
             cache

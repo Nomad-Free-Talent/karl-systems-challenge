@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/weather")
                     .wrap(middleware::JwtAuth::new(jwt_secret.clone()))
+                    .wrap(middleware::PermissionCheck::new("weather:read".to_string()))
                     .route("/{city}", web::get().to(handlers::weather::get_weather))
                     .route(
                         "/{city}/providers",

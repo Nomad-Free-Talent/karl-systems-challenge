@@ -8,4 +8,5 @@ pub mod services;
 pub use config::Config;
 pub use db::create_pool;
 pub use models::{Permission, Role, User};
-pub use services::{generate_token, hash_password, validate_token, verify_password, Claims};
+pub use services::{create_claims, generate_token, hash_password, validate_token, verify_password};
+pub use shared::Claims;

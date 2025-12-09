@@ -6,6 +6,7 @@ pub struct Claims {
     pub sub: Uuid,
     pub username: String,
     pub roles: Vec<String>,
+    pub permissions: Vec<String>,
     pub exp: i64,
     pub iat: i64,
 }

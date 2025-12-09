@@ -1,6 +1,6 @@
 use crate::models::permission::Role;
 use crate::models::User;
-use crate::services::{generate_token, hash_password, verify_password, Claims};
+use crate::services::{create_claims, generate_token, hash_password, verify_password};
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use shared::{ApiResponse, AppError, AppResult};
@@ -130,8 +130,26 @@ pub async fn login(
 
     let role_names: Vec<String> = roles.iter().map(|r| r.name.clone()).collect();
 
+    // Get all permissions for user (from all their roles)
+    let mut permissions = Vec::new();
+    for role in &roles {
+        let role_permissions = Role::get_permissions(&pool, role.id)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to get role permissions: {e}")))?;
+        for perm in role_permissions {
+            if !permissions.contains(&perm.name) {
+                permissions.push(perm.name);
+            }
+        }
+    }
+
     // Generate JWT token
-    let claims = Claims::new(user.id, user.username.clone(), role_names.clone());
+    let claims = create_claims(
+        user.id,
+        user.username.clone(),
+        role_names.clone(),
+        permissions.clone(),
+    );
     let token = generate_token(&claims, &config.jwt_secret)
         .map_err(|e| AppError::Internal(format!("Failed to generate token: {e}")))?;
 
