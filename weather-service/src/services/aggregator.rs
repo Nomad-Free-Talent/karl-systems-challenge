@@ -39,48 +39,85 @@ impl WeatherAggregator {
     /// Aggregate weather data from all available providers for a given city
     /// Returns aggregated temperature, condition, humidity, and wind speed
     pub async fn aggregate_weather(&self, city: &str) -> Result<AggregatedWeather, String> {
+        // Check rate limits for both providers concurrently
+        let (_, _) = tokio::join!(
+            self.rate_limiter.wait_if_needed(&WeatherProvider::WttrIn),
+            self.rate_limiter.wait_if_needed(&WeatherProvider::OpenMeteo)
+        );
+
+        // Fetch from both providers concurrently with timeout handling
+        const API_TIMEOUT_SECS: u64 = 10;
+        let timeout_duration = std::time::Duration::from_secs(API_TIMEOUT_SECS);
+
+        let (wttrin_result, openmeteo_result) = tokio::join!(
+            tokio::time::timeout(
+                timeout_duration,
+                self.wttrin.get_weather_for_city(city)
+            ),
+            tokio::time::timeout(
+                timeout_duration,
+                self.openmeteo.get_weather_for_city(city)
+            )
+        );
+
         let mut sources = Vec::new();
         let mut temperatures = Vec::new();
         let mut conditions = Vec::new();
         let mut humidities = Vec::new();
         let mut wind_speeds = Vec::new();
 
-        // Fetch from wttr.in
-        self.rate_limiter
-            .wait_if_needed(&WeatherProvider::WttrIn)
-            .await;
-        if let Ok(Some(weather)) = self.wttrin.get_weather_for_city(city).await {
-            sources.push(weather.clone());
+        // Process wttr.in result with error handling
+        match wttrin_result {
+            Ok(Ok(Some(weather))) => {
+                sources.push(weather.clone());
 
-            if let Some(temp) = weather.get("temperature").and_then(|v| v.as_f64()) {
-                temperatures.push(temp);
+                if let Some(temp) = weather.get("temperature").and_then(|v| v.as_f64()) {
+                    temperatures.push(temp);
+                }
+                if let Some(cond) = weather.get("condition").and_then(|v| v.as_str()) {
+                    conditions.push(cond.to_string());
+                }
+                if let Some(hum) = weather.get("humidity").and_then(|v| v.as_i64()) {
+                    humidities.push(hum);
+                }
+                if let Some(ws) = weather.get("wind_speed").and_then(|v| v.as_f64()) {
+                    wind_speeds.push(ws);
+                }
             }
-            if let Some(cond) = weather.get("condition").and_then(|v| v.as_str()) {
-                conditions.push(cond.to_string());
+            Ok(Ok(None)) => {
+                log::debug!("wttr.in returned no data for city: {}", city);
             }
-            if let Some(hum) = weather.get("humidity").and_then(|v| v.as_i64()) {
-                humidities.push(hum);
+            Ok(Err(e)) => {
+                log::warn!("wttr.in API error for city {}: {}", city, e);
             }
-            if let Some(ws) = weather.get("wind_speed").and_then(|v| v.as_f64()) {
-                wind_speeds.push(ws);
+            Err(_) => {
+                log::warn!("wttr.in API timeout for city: {} (exceeded {}s)", city, API_TIMEOUT_SECS);
             }
         }
 
-        // Fetch from OpenMeteo
-        self.rate_limiter
-            .wait_if_needed(&WeatherProvider::OpenMeteo)
-            .await;
-        if let Ok(Some(weather)) = self.openmeteo.get_weather_for_city(city).await {
-            sources.push(weather.clone());
+        // Process OpenMeteo result with error handling
+        match openmeteo_result {
+            Ok(Ok(Some(weather))) => {
+                sources.push(weather.clone());
 
-            if let Some(temp) = weather.get("temperature").and_then(|v| v.as_f64()) {
-                temperatures.push(temp);
+                if let Some(temp) = weather.get("temperature").and_then(|v| v.as_f64()) {
+                    temperatures.push(temp);
+                }
+                if let Some(cond) = weather.get("condition").and_then(|v| v.as_str()) {
+                    conditions.push(cond.to_string());
+                }
+                if let Some(ws) = weather.get("wind_speed").and_then(|v| v.as_f64()) {
+                    wind_speeds.push(ws);
+                }
             }
-            if let Some(cond) = weather.get("condition").and_then(|v| v.as_str()) {
-                conditions.push(cond.to_string());
+            Ok(Ok(None)) => {
+                log::debug!("OpenMeteo returned no data for city: {}", city);
             }
-            if let Some(ws) = weather.get("wind_speed").and_then(|v| v.as_f64()) {
-                wind_speeds.push(ws);
+            Ok(Err(e)) => {
+                log::warn!("OpenMeteo API error for city {}: {}", city, e);
+            }
+            Err(_) => {
+                log::warn!("OpenMeteo API timeout for city: {} (exceeded {}s)", city, API_TIMEOUT_SECS);
             }
         }
 
