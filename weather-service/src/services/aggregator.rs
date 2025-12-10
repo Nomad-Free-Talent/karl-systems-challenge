@@ -42,7 +42,8 @@ impl WeatherAggregator {
         // Check rate limits for both providers concurrently
         let (_, _) = tokio::join!(
             self.rate_limiter.wait_if_needed(&WeatherProvider::WttrIn),
-            self.rate_limiter.wait_if_needed(&WeatherProvider::OpenMeteo)
+            self.rate_limiter
+                .wait_if_needed(&WeatherProvider::OpenMeteo)
         );
 
         // Fetch from both providers concurrently with timeout handling
@@ -50,14 +51,8 @@ impl WeatherAggregator {
         let timeout_duration = std::time::Duration::from_secs(API_TIMEOUT_SECS);
 
         let (wttrin_result, openmeteo_result) = tokio::join!(
-            tokio::time::timeout(
-                timeout_duration,
-                self.wttrin.get_weather_for_city(city)
-            ),
-            tokio::time::timeout(
-                timeout_duration,
-                self.openmeteo.get_weather_for_city(city)
-            )
+            tokio::time::timeout(timeout_duration, self.wttrin.get_weather_for_city(city)),
+            tokio::time::timeout(timeout_duration, self.openmeteo.get_weather_for_city(city))
         );
 
         let mut sources = Vec::new();
@@ -91,7 +86,11 @@ impl WeatherAggregator {
                 log::warn!("wttr.in API error for city {}: {}", city, e);
             }
             Err(_) => {
-                log::warn!("wttr.in API timeout for city: {} (exceeded {}s)", city, API_TIMEOUT_SECS);
+                log::warn!(
+                    "wttr.in API timeout for city: {} (exceeded {}s)",
+                    city,
+                    API_TIMEOUT_SECS
+                );
             }
         }
 
@@ -117,7 +116,11 @@ impl WeatherAggregator {
                 log::warn!("OpenMeteo API error for city {}: {}", city, e);
             }
             Err(_) => {
-                log::warn!("OpenMeteo API timeout for city: {} (exceeded {}s)", city, API_TIMEOUT_SECS);
+                log::warn!(
+                    "OpenMeteo API timeout for city: {} (exceeded {}s)",
+                    city,
+                    API_TIMEOUT_SECS
+                );
             }
         }
 
